@@ -23,25 +23,10 @@ def check_production(A, follow_set, first_set, productions, parent = None):
         production_string = X[i]
         print("\tProd Str:", production_string)
 
-        # Get the production type. Depending on the type create the follow_set set.
-        prod_type, B, b = get_production_type(production_string, productions)
-        if prod_type == Production_type.aBb:
-            print("\tUpdating follow_set[" + B + "] with first_set[" +
-                    b + "]")
-            b_set = fir.get_first_set(b, first_set)
-            follow_set[B]["terminals"].update(b_set - set("@"))
-            if "@" in b_set:
-                follow_set[B]["terminals"].update(follow_set[A]["terminals"])
-        elif prod_type == Production_type.aB:
-            print("\tUpdating follow_set[" + B + "] with follow_set[" +
-                    A + "]")
-            follow_set[B]["terminals"].update(follow_set[A]["terminals"])
-        elif prod_type == Production_type.large:
-            print("\tProduction string is to large. Need to reduce it.")
-            parse_large_production(production_string, follow_set, first_set, A, productions)
+        # Depending on the type create the follow_set set.
+        print("\tProduction string is to large. Need to reduce it.")
+        parse_large_production(production_string, follow_set, first_set, A, productions)
 
-        else:
-            print("\tProduction_type was not recognized. Possibly only terminals.")
 
         while j < len(production_string):        # Go through the string
             j+=1
@@ -133,7 +118,7 @@ def parse_large_production(production_string, follow_set, first_set, A, producti
         else:
         # The aBb case. 
             print("\t\tUpdating follow_set[" + B + "] with first_set[" +
-                    b + "]")
+                    b + "] - @")
             b_set = fir.get_first_set(b, first_set)
             follow_set[B]["terminals"].update(b_set - set("@"))
             if "@" in b_set:

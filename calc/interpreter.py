@@ -1,14 +1,13 @@
 #!/usr/bin/python3
 #import pdb
-import token as tkn 
-Token = tkn.Token
+import logging
+import calc_lexeme as lxm 
+import calc_token as tkn 
 
-# Token types
-#
-# EOF (end-of-file) token is used to indicate that
-# there is no more input left for lexical analysis
-INTEGER, PLUS, EOF = 'INTEGER', 'PLUS', 'EOF'
-
+logging.basicConfig(level=logging.WARNING,
+        format='%(name)s:%(levelname)s\t'\
+                '%(funcName)s():%(lineno)s\t' \
+                '%(message)s')
 
 #
 # Main
@@ -20,98 +19,83 @@ def main():
 # Interpreter
 #
 class Interpreter(object):
+    # 
+    # Ctor
+    #
     def __init__(self, text):
-        # client string input, e.g. "3+5"
-        self.text = text
-        # self.pos is an index into self.text
-        self.pos = 0
-        # current token instance
-        self.current_token = None
-        self.current_char = self.text[self.pos] 
-
-    def error(self):
-        raise Exception('Error parsing input')
-
-    def advance(self):
-        """Advance the 'pos' pointer and set the 'current_char' variable."""
-        self.pos += 1
-        if self.pos > len(self.text) - 1:
-            self.current_char = None  # Indicates end of input
-        else:
-            self.current_char = self.text[self.pos]
-
-    def integer(self):
-        result = ""
-        while self.current_char is not None and self.current_char.isdigit():
-            result += self.current_char
-            self.advance()
-
-        return int(result)
-        
-
-    def get_next_token(self):
-        """Lexical analyzer (also known as scanner or tokenizer)
-
-        This method is responsible for breaking a sentence
-        apart into tokens. One token at a time.
         """
-        text = self.text
+        @param[in] text     is the input text
+        """
+        self.__lexeme = lxm.Lexeme(text)
 
-        if self.current_char == None:
-            return Token(EOF, None)
+    #
+    # Error
+    #
+    def indigestion(self, expected, actual):
+        raise Exception('Was expecting token type: {}' \
+                ', instead received: {}'.format(expected, actual))
 
-        while self.current_char.isspace():
-            self.advance()
-
-        # if the character is a digit then convert it to
-        # integer, create an INTEGER token, increment self.pos
-        # index to point to the next character after the digit,
-        # and return the INTEGER token
-        if self.current_char.isdigit():
-            token = Token(INTEGER, int(self.integer()))
-            return token
-
-        if self.current_char == '+':
-            token = Token(PLUS, self.current_char)
-            self.advance()
-            return token
-
-        self.error()
-
+    #
+    # Nom nom nom
+    #
     def eat(self, token_type):
-        # compare the current token type with the passed token
-        # type and if they match then "eat" the current token
-        # and assign the next token to the self.current_token,
-        # otherwise raise an exception.
-        if self.current_token.type == token_type:
-            self.current_token = self.get_next_token()
+        """
+        Eat the specified token_type.
+        Raise exception if the lookahead is an unexpected token_type
+
+         @param[in] token_type
+        """
+        logging.warning("Ordered {}".format(token_type))
+        logging.warning("Got {}:{}".format(self.__lexeme.token().type, \
+                self.__lexeme.token().value))
+        if self.__lexeme.token().type == token_type:
+            self.__lexeme.next_token()
         else:
-            print("expecting type: ", token_type)
-            print("insted got type: ", self.current_token.type)
-            self.error()
+            self.indigestion(token_type, self.__lexeme.token().type)
 
+    #
+    # Factor
+    #
     def factor(self):
-        """factor : INTEGER"""
-        token = self.current_token
-        self.eat(INTEGER)
-        return token.value
+        logging.warning("IN")
+        """
+        factor : INTEGER
+        The factor is the smallest posible production
+        the parser expects a string of digits here,
+        anything else should raise an exception
+        """
+        # TODO, don't like this. Too magic. Book answers?
+        ret = self.__lexeme.token().value
+        self.eat(tkn.Type.INTEGER)
 
+        return ret 
+
+    #
+    # Term
+    #
     def term(self):
-        """term : factor ((MUL | DIV) factor)*"""
+        logging.warning("IN")
+        """
+        term : factor ((MUL | DIV) factor)*
+        """
         result = self.factor()
 
-        while self.current_token.type in (MUL, DIV):
-            token = self.current_token
-            if token.type == MUL:
-                self.eat(MUL)
+        while self.__lexeme.token().type in (tkn.Type.MUL, tkn.Type.DIV):
+            token = self.__lexeme.token()
+            if token.type == tkn.Type.MUL:
+                self.eat(tkn.Type.MUL)
                 result = result * self.factor()
-            elif token.type == DIV:
-                self.eat(DIV)
+            elif token.type == tkn.Type.DIV:
+                self.eat(tkn.Type.DIV)
                 result = result / self.factor()
 
         return result
 
+    #
+    # Expr
+    #
     def expr(self):
+        logging.warning("IN")
         """Arithmetic expression parser / interpreter.
 
         calc>  14 + 2 * 3 - 6 / 2
@@ -123,13 +107,13 @@ class Interpreter(object):
         """
         result = self.term()
 
-        while self.current_token.type in (PLUS, MINUS):
-            token = self.current_token
-            if token.type == PLUS:
-                self.eat(PLUS)
+        while self.__lexeme.token().type in (tkn.Type.PLUS, tkn.Type.MINUS):
+            token = self.__lexeme.token()
+            if token.type == tkn.Type.PLUS:
+                self.eat(tkn.Type.PLUS)
                 result = result + self.term()
-            elif token.type == MINUS:
-                self.eat(MINUS)
+            elif token.type == tkn.Type.MINUS:
+                self.eat(tkn.Type.MINUS)
                 result = result - self.term()
 
         return result

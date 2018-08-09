@@ -13,7 +13,8 @@ def main():
         if not text:
             continue
         interpreter = Interpreter(text)
-        result = interpreter.expr()
+        root = interpreter.expr()
+        result = interpreter.parse_tree(root)
         print(result)
 
 

@@ -28,6 +28,7 @@ class Interpreter(object):
         @param[in] text     is the input text
         """
         self.__lexeme = lxm.Lexeme(text)
+        self.__visitor = ast.CalcVisitor()
 
     #
     # Error
@@ -68,14 +69,14 @@ class Interpreter(object):
         # TODO, don't like the hidden (global) lookahead token
         if self.__lexeme.token().type == tkn.Type.LPARAN:
             self.eat(tkn.Type.LPARAN)
-            ret = self.expr()
+            node = self.expr()
             self.eat(tkn.Type.RPARAN)
 
         else :
-            ret = self.__lexeme.token().value
+            node = self.__lexeme.token()
             self.eat(tkn.Type.INTEGER)
 
-        return ret 
+        return node 
 
     #
     # Term
@@ -85,18 +86,18 @@ class Interpreter(object):
         """
         term : factor ((MUL | DIV) factor)*
         """
-        result = self.factor()
+        node = self.factor()
 
         while self.__lexeme.token().type in (tkn.Type.MUL, tkn.Type.DIV):
             token = self.__lexeme.token()
             if token.type == tkn.Type.MUL:
                 self.eat(tkn.Type.MUL)
-                result = result * self.factor()
             elif token.type == tkn.Type.DIV:
                 self.eat(tkn.Type.DIV)
-                result = result / self.factor()
 
-        return result
+            node = ast.BinOp(left=node, op=token, right=self.factor())
+
+        return node 
 
     #
     # Expr
@@ -112,18 +113,24 @@ class Interpreter(object):
         term   : factor ((MUL | DIV) factor)*
         factor : INTEGER
         """
-        result = self.term()
+        node = self.term()
 
         while self.__lexeme.token().type in (tkn.Type.PLUS, tkn.Type.MINUS):
             token = self.__lexeme.token()
             if token.type == tkn.Type.PLUS:
                 self.eat(tkn.Type.PLUS)
-                result = result + self.term()
             elif token.type == tkn.Type.MINUS:
                 self.eat(tkn.Type.MINUS)
-                result = result - self.term()
 
-        return result
+            node = ast.BinOp(left=node, op=token, right=self.term())
+
+        return node 
+
+    #
+    # Expr
+    #
+    def parse_tree(self, node):
+        return self.__visitor.visit(node)
 
 
 #

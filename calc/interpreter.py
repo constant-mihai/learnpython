@@ -3,6 +3,7 @@
 import logging
 import calc_lexeme as lxm 
 import calc_token as tkn 
+import ast
 
 logging.basicConfig(level=logging.WARNING,
         format='%(name)s:%(levelname)s\t'\
@@ -57,16 +58,22 @@ class Interpreter(object):
     # Factor
     #
     def factor(self):
-        logging.warning("IN")
+        logging.warning("IN:")
         """
         factor : INTEGER
         The factor is the smallest posible production
         the parser expects a string of digits here,
         anything else should raise an exception
         """
-        # TODO, don't like this. Too magic. Book answers?
-        ret = self.__lexeme.token().value
-        self.eat(tkn.Type.INTEGER)
+        # TODO, don't like the hidden (global) lookahead token
+        if self.__lexeme.token().type == tkn.Type.LPARAN:
+            self.eat(tkn.Type.LPARAN)
+            ret = self.expr()
+            self.eat(tkn.Type.RPARAN)
+
+        else :
+            ret = self.__lexeme.token().value
+            self.eat(tkn.Type.INTEGER)
 
         return ret 
 

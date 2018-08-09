@@ -8,6 +8,17 @@ logging.basicConfig(level=logging.WARNING,
                 '%(message)s')
 
 #
+# Parser Exception
+#
+class Parsing_error(Exception):
+    #
+    # Ctor
+    #
+    def __init__(self, text):
+        print("Unkown char: {}".format(text))
+
+
+#
 # Lexeme class
 #
 class Lexeme():
@@ -17,7 +28,9 @@ class Lexeme():
     def __init__(self, text):
         """
         TODO rename to Lexer?
-        WARNING: Anything in this class can advance position.
+        WARNING!!!WARNING!!!WARNING!!!
+        Anything in this class can advance __pos.
+        WARNING!!!WARNING!!!WARNING!!!
 
         param[in] text      input  text
         """
@@ -27,6 +40,8 @@ class Lexeme():
         self.__token = None
         # Advance to the first token
         self.next_token() 
+        # Keywords
+        words = {}
 
     #
     # Error
@@ -42,6 +57,7 @@ class Lexeme():
 
     #
     # Builds an integer
+    # TODO -- not tested
     #
     def integer(self):
         logging.warning("IN")
@@ -54,9 +70,24 @@ class Lexeme():
 
         logging.warning("Integer: {}".format(result))
         return int(result)
+
+    #
+    # Map words
+    #
+    def map_words():
+        if self.__pos.peek().isalpha():
+            s = self.word()
+            if w.has(s) is True:
+                return w[s]
+            else:
+                w[s] = tkn.Token(tkn.Type.WORD, s) 
+                return w[s]
+
+
         
     #
     # White spaces
+    # TODO -- not tested
     #
     def whitespaces():
         """
@@ -124,9 +155,17 @@ class Lexeme():
             self.__pos.adv(1)
             return 
 
-        self.error()
-
-
+        if self.__pos.char()  == '(':
+            self.__token = tkn.Token(tkn.Type.LPARAN, self.__pos.char())
+            self.__pos.adv(1)
+            return 
+        if self.__pos.char()  == ')':
+            self.__token = tkn.Token(tkn.Type.RPARAN, self.__pos.char())
+            self.__pos.adv(1)
+            return 
+        
+        # Reaching here means the char is not known
+        raise Parsing_error(self.__pos.char())
 #
 # Main
 #

@@ -11,6 +11,8 @@ class Type(Enum):
     MINUS = 2,
     MUL = 3,
     DIV = 4,
+    LPARAN = 5,
+    RPARAN = 6,
     EOF = 100 
 
 

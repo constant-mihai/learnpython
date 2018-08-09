@@ -52,16 +52,23 @@ class CalcVisitor(NodeVisitor):
         pass 
 
     def visit_BinOp(self, node):
+        left = self.visit(node.left)
+        right = self.visit(node.right)
         if node.op.type == tkn.Type.PLUS:
-            return self.visit(node.left) + self.visit(node.right)
+            print("+")
+            return (left + right)
         elif node.op.type == tkn.Type.MINUS:
-            return self.visit(node.left) - self.visit(node.right)
+            print("-")
+            return (left - right)
         elif node.op.type == tkn.Type.MUL:
-            return self.visit(node.left) * self.visit(node.right)
+            print("*")
+            return (left * right)
         elif node.op.type == tkn.Type.DIV:
-            return self.visit(node.left) / self.visit(node.right)
+            print("/")
+            return (left / right)
 
     def visit_Token(self, node):
+        print(node.value)
         return node.value
 
 #

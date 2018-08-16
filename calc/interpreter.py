@@ -61,17 +61,24 @@ class Interpreter(object):
     def factor(self):
         logging.warning("IN:")
         """
-        factor : INTEGER
+        factor : (PLUS | MINUS) factor | INTEGER | LPAREN expr RPAREN
+
         The factor is the smallest posible production
         the parser expects a string of digits here,
         anything else should raise an exception
         """
         # TODO, don't like the hidden (global) lookahead token
+        token = self.__lexeme.token()
         if self.__lexeme.token().type == tkn.Type.LPARAN:
             self.eat(tkn.Type.LPARAN)
             node = self.expr()
             self.eat(tkn.Type.RPARAN)
-
+        elif self.__lexeme.token().type == tkn.Type.PLUS:
+            self.eat(tkn.Type.PLUS)
+            node = ast.UnaryOp(token, self.factor()) 
+        elif self.__lexeme.token().type == tkn.Type.MINUS:
+            self.eat(tkn.Type.MINUS)
+            node = ast.UnaryOp(token, self.factor()) 
         else :
             node = self.__lexeme.token()
             self.eat(tkn.Type.INTEGER)

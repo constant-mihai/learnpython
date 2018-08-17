@@ -13,6 +13,12 @@ class Type(Enum):
     DIV = 4,
     LPARAN = 5,
     RPARAN = 6,
+    BEGIN = 7,
+    END = 8,
+    SEMI = 9,
+    DOT = 10,
+    ID = 11,
+    ASSIGN = 12,
     EOF = 100 
 
 
@@ -21,11 +27,17 @@ class Type(Enum):
 #
 class Token(object):
 
+    #
+    # Ctor
+    #
     def __init__(self, type, value):
         # token type: INTEGER, PLUS, or EOF
         self.type = type
         self.value = value
 
+    #
+    # String representation
+    #
     def __str__(self):
         """String representation of the class instance.
 
@@ -54,7 +66,16 @@ class Position():
         self.__text = text
         self.__char = self.__text[self.__pos]
         print("Pos: {}, char: {}".format(self.__pos, self.__char))
-        # self.__peek = None
+
+    #
+    # Peek
+    #
+    def peek(self):
+        if (self.__pos + 1) > (len(self.__text) - 1):
+            return None 
+        else:
+            return self.__text[self.__pos + 1]
+
 
     #
     # Advance
@@ -66,8 +87,6 @@ class Position():
                     .format(self.__pos, self.__char))
         else:
             self.__char = self.__text[self.__pos]
-            # if ()
-            # self.__peek = self.__text[self.__pos + 1]
             print("Pos: {}, char: {}".format(self.__pos, self.__char))
 
     #

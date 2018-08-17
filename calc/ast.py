@@ -17,12 +17,13 @@ class AST():
     #
     def __init__(self):
         self.__root = None
+        self.GLOBAL_SCOPE = dict()
 
 
 #
 # Node
 #
-class BinOp():
+class BinOp(AST):
     #
     # Ctor
     #
@@ -38,6 +39,39 @@ class UnaryOp(AST):
     def __init__(self, op, expr):
         self.op = op
         self.expr = expr
+
+#
+# Compound
+#
+class Compound(AST):
+    """Represents a 'BEGIN ... END' block"""
+    def __init__(self):
+        self.children = []
+
+#
+# Assign
+#
+class Assign(AST):
+    def __init__(self, left, op, right):
+        self.left = left
+        # Why op? TODO
+        self.token = self.op = op
+        self.right = right
+
+#
+# Var
+#
+class Var(AST):
+    """The Var node is constructed out of ID token."""
+    def __init__(self, token):
+        self.token = token
+        self.value = token.value
+
+#
+# NoOp
+#
+class NoOp(AST):
+    pass
 
 #
 # Generic node visitor
@@ -112,6 +146,37 @@ class CalcVisitor(NodeVisitor):
     def visit_Token(self, node):
         print(node.value)
         return node.value
+
+    #
+    # Visit compound
+    #
+    def visit_Compound(self, node):
+        for child in node.children:
+            self.visit(child)
+
+    #
+    # Visit no op
+    #
+    def visit_NoOp(self, node):
+        pass
+
+    #
+    # Assign
+    #
+    def visit_Assign(self, node):
+        var_name = node.left.value
+        self.GLOBAL_SCOPE[var_name] = self.visit(node.right)
+
+    #
+    # Visit var
+    #
+    def visit_Var(self, node):
+        var_name = node.value
+        val = self.GLOBAL_SCOPE.get(var_name)
+        if val is None:
+            raise NameError(repr(var_name))
+        else:
+            return val
 
 #
 # Main

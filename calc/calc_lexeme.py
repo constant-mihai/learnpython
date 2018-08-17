@@ -22,18 +22,53 @@ class Parsing_error(Exception):
 # Lexeme class
 #
 class Lexeme():
+    """
+    program : compound_statement DOT
+
+    compound_statement : BEGIN statement_list END
+
+    statement_list : statement
+                   | statement SEMI statement_list
+
+    statement : compound_statement
+              | assignment_statement
+              | empty
+
+    assignment_statement : variable ASSIGN expr
+
+    empty :
+
+    expr: term ((PLUS | MINUS) term)*
+
+    term: factor ((MUL | DIV) factor)*
+
+    factor : PLUS factor
+           | MINUS factor
+           | INTEGER
+           | LPAREN expr RPAREN
+           | variable
+
+    variable: ID
+    """
+
     #
     # Ctor
     #
     def __init__(self, text):
         """
         TODO rename to Lexer?
-        WARNING!!!WARNING!!!WARNING!!!
+        WARNING !!! WARNING !!! WARNING!!!
         Anything in this class can advance __pos.
-        WARNING!!!WARNING!!!WARNING!!!
+        WARNING !!! WARNING !!! WARNING!!!
 
         param[in] text      input  text
         """
+        self.__words = dict()
+        self.__words = {
+                "BEGIN": tkn.Token(tkn.Type.BEGIN, "BEGIN"),
+                "END": tkn.Token(tkn.Type.END, "END")
+                }
+        print(self.__words)
         # Object keeping position and current char
         self.__pos = tkn.Position(text)
         # The current token
@@ -41,7 +76,6 @@ class Lexeme():
         # Advance to the first token
         self.next_token() 
         # Keywords
-        words = {}
 
     #
     # Error
@@ -54,6 +88,21 @@ class Lexeme():
     #
     def token(self):
         return self.__token
+
+    #
+    # Build a word (identifier)
+    #
+    def word(self):
+        logging.warning("IN")
+        result = ""
+        while self.__pos.the_end() != True and \
+              self.__pos.char().isalpha():
+              
+            result += self.__pos.char()
+            self.__pos.adv(1)
+
+        logging.warning("Word: {}".format(result))
+        return result
 
     #
     # Builds an integer
@@ -74,14 +123,13 @@ class Lexeme():
     #
     # Map words
     #
-    def map_words():
-        if self.__pos.peek().isalpha():
-            s = self.word()
-            if w.has(s) is True:
-                return w[s]
-            else:
-                w[s] = tkn.Token(tkn.Type.WORD, s) 
-                return w[s]
+    def map_words(self):
+        s = self.word()
+        if self.__words.get(s) is not None:
+            return self.__words[s]
+        else:
+            self.__words[s] = tkn.Token(tkn.Type.ID, s) 
+            return self.__words[s]
 
 
         
@@ -100,11 +148,11 @@ class Lexeme():
             if self.__pos.the_end():
                 break
 
-            # self.peek = self.text[self.__pos + i]
-            # if self.peek.isspace() or \
-               # self.peek.istab():#TODO
+            # self.peek() = self.text[self.__pos + i]
+            # if self.peek().isspace() or \
+               # self.peek().istab():#TODO
                 # pass
-            # elif self.peek.isnewline():#TODO
+            # elif self.peek().isnewline():#TODO
                 # self.line += 1 
             # else: break
 
@@ -133,6 +181,26 @@ class Lexeme():
         if self.__pos.char().isdigit():
             num = int(self.integer())
             self.__token = tkn.Token(tkn.Type.INTEGER, num)
+            return
+
+        if self.__pos.char().isalpha():
+            self.__token = self.map_words()
+            return
+
+        if self.__pos.char() == ':' and self.peek() == '=':
+            self.__token = tkn.Token(tkn.Type.ASSIGN, ':=')
+            self.__pos.adv(1)
+            self.__pos.adv(1)
+            return 
+
+        if self.__pos.char() == ';':
+            self.__token = tkn.Token(tkn.Type.SEMI, ';')
+            self.__pos.adv(1)
+            return 
+
+        if self.__pos.char() == '.':
+            self.__token = tkn.Token(tkn.Type.DOT, '.')
+            self.__pos.adv(1)
             return
 
         if self.__pos.char()  == '+':

@@ -56,6 +56,109 @@ class Interpreter(object):
             self.indigestion(token_type, self.__lexeme.token().type)
 
     #
+    # Program
+    #
+    def program(self):
+        logging.warning("IN:")
+        """program : compound_statement DOT"""
+        node = self.compound_statement()
+        self.eat(tkn.Type.DOT)
+        return node
+
+    #
+    # Compound statement
+    #
+    def compound_statement(self):
+        logging.warning("IN:")
+        """
+        compound_statement: BEGIN statement_list END
+        """
+        self.eat(tkn.Type.BEGIN)
+        nodes = self.statement_list()
+        self.eat(tkn.Type.END)
+
+        root = ast.Compound()
+        for node in nodes:
+            root.children.append(node)
+
+        return root
+
+    #
+    # Statement list
+    #
+    def statement_list(self):
+        logging.warning("IN:")
+        """
+        statement_list : statement
+                       | statement SEMI statement_list
+        """
+        node = self.statement()
+
+        results = [node]
+
+        while self.__lexeme.token().type == tkn.Type.SEMI:
+            self.eat(tkn.Type.SEMI)
+            results.append(self.statement())
+
+        if self.__lexeme.token().type == tkn.Type.ID:
+            self.error()
+
+        return results
+
+    #
+    # Statement
+    #
+    def statement(self):
+        logging.warning("IN:")
+        """
+        statement : compound_statement
+                  | assignment_statement
+                  | empty
+        """
+        if self.__lexeme.token().type == tkn.Type.BEGIN:
+            node = self.compound_statement()
+        elif self.__lexeme.token().type == tkn.Type.ID:
+            node = self.assignment_statement()
+        else:
+            node = self.empty()
+        return node
+
+    #
+    # Assignment
+    #
+    def assignment_statement(self):
+        logging.warning("IN:")
+        """
+        assignment_statement : variable ASSIGN expr
+        """
+        left = self.variable()
+        token = self.__lexeme.token()
+        self.eat(tkn.Type.ASSIGN)
+        right = self.expr()
+        node = Assign(left, token, right)
+        return node
+
+    #
+    # Variable
+    #
+    def variable(self):
+        logging.warning("IN:")
+        """
+        variable : ID
+        """
+        node = Var(self.__lexeme.token())
+        self.eat(tkn.Type.ID)
+        return node
+
+    #
+    # Empty
+    #
+    def empty(self):
+        logging.warning("IN:")
+        """An empty production"""
+        return ast.NoOp()
+
+    #
     # Factor
     #
     def factor(self):

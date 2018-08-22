@@ -19,6 +19,14 @@ class Type(Enum):
     DOT = 10,
     ID = 11,
     ASSIGN = 12,
+    PROGRAM = 13,
+    FLOAT_DIV = 14,
+    VAR = 15,
+    REAL = 16,
+    COMMA = 17,
+    COLON = 18,
+    INTEGER_CONST = 19,
+    REAL_CONST = 20,
     EOF = 100 
 
 

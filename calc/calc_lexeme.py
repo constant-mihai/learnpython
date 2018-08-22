@@ -1,4 +1,5 @@
 #!/usr/bin/python3
+import pdb
 import logging
 import calc_token as tkn 
 
@@ -66,7 +67,12 @@ class Lexeme():
         self.__words = dict()
         self.__words = {
                 "BEGIN": tkn.Token(tkn.Type.BEGIN, "BEGIN"),
-                "END": tkn.Token(tkn.Type.END, "END")
+                "END": tkn.Token(tkn.Type.END, "END"),
+                "PROGRAM": tkn.Token(tkn.Type.PROGRAM, "PROGRAM"),
+                "DIV": tkn.Token(tkn.Type.DIV, "DIV"),
+                'VAR': tkn.Token(tkn.Type.VAR, 'VAR'),
+                'INTEGER': tkn.Token(tkn.Type.INTEGER, 'INTEGER'),
+                'REAL': tkn.Token(tkn.Type.REAL, 'REAL'),
                 }
         print(self.__words)
         # Object keeping position and current char
@@ -96,7 +102,8 @@ class Lexeme():
         logging.warning("IN")
         result = ""
         while self.__pos.the_end() != True and \
-              self.__pos.char().isalpha():
+              ( self.__pos.char().isalpha() or \
+                self.__pos.char().isdigit() ):
               
             result += self.__pos.char()
             self.__pos.adv(1)
@@ -106,7 +113,7 @@ class Lexeme():
 
     #
     # Builds an integer
-    # TODO -- not tested
+    # TODO -- float part not tested
     #
     def integer(self):
         logging.warning("IN")
@@ -117,8 +124,19 @@ class Lexeme():
             result += self.__pos.char()
             self.__pos.adv(1)
 
-        logging.warning("Integer: {}".format(result))
-        return int(result)
+        if self.__pos.char() == ".":
+            result += self.__pos.char()
+            self.__pos.adv(1)
+            # parse the decimals
+            while self.__pos.the_end() != True and \
+                  self.__pos.char().isdigit():
+                result += self.__pos.char()
+                self.__pos.adv(1)
+            logging.warning("Float: {}".format(result))
+            return False, float(result)
+        else:
+            logging.warning("Integer: {}".format(result))
+            return True, int(result)
 
     #
     # Map words
@@ -131,6 +149,13 @@ class Lexeme():
             self.__words[s] = tkn.Token(tkn.Type.ID, s) 
             return self.__words[s]
 
+    #
+    # Skip comments
+    #
+    def skip_comment(self):
+        while self.__pos.char() != '}':
+            self.__pos.adv(1)
+        self.__pos.adv(1)  # the closing curly brace
 
         
     #
@@ -170,26 +195,44 @@ class Lexeme():
             self.__token = tkn.Token(tkn.Type.EOF, None)
             return 
 
-        while self.__pos.char().isspace():
-            print("is space!")
-            self.__pos.adv(1)
+        while self.__pos.the_end() is not True:
+            if self.__pos.char().isspace():
+                print("is space!")
+                self.__pos.adv(1)
+
+            elif self.__pos.char()  == '{':
+                print("is comment!")
+                self.__pos.adv(1)
+                self.skip_comment()
+
+            else:
+                break
 
         # if the character is a digit then convert it to
         # integer, create an INTEGER token, increment self.__pos
         # index to point to the next character after the digit,
         # and return the INTEGER token
         if self.__pos.char().isdigit():
-            num = int(self.integer())
-            self.__token = tkn.Token(tkn.Type.INTEGER, num)
+            flag, num = self.integer()
+            if flag is True:
+                self.__token = tkn.Token(tkn.Type.INTEGER_CONST, num)
+            else:
+                self.__token = tkn.Token(tkn.Type.REAL_CONST, num)
+
             return
 
         if self.__pos.char().isalpha():
             self.__token = self.map_words()
             return
 
-        if self.__pos.char() == ':' and self.peek() == '=':
+        if self.__pos.char() == ':' and self.__pos.peek() == '=':
             self.__token = tkn.Token(tkn.Type.ASSIGN, ':=')
             self.__pos.adv(1)
+            self.__pos.adv(1)
+            return 
+
+        if self.__pos.char() == ':':
+            self.__token = tkn.Token(tkn.Type.COLON, ':')
             self.__pos.adv(1)
             return 
 
@@ -200,6 +243,11 @@ class Lexeme():
 
         if self.__pos.char() == '.':
             self.__token = tkn.Token(tkn.Type.DOT, '.')
+            self.__pos.adv(1)
+            return
+
+        if self.__pos.char() == ',':
+            self.__token = tkn.Token(tkn.Type.COMMA, ',')
             self.__pos.adv(1)
             return
 
@@ -219,7 +267,7 @@ class Lexeme():
             return 
 
         if self.__pos.char()  == '/':
-            self.__token = tkn.Token(tkn.Type.DIV, self.__pos.char())
+            self.__token = tkn.Token(tkn.Type.FLOAT_DIV, self.__pos.char())
             self.__pos.adv(1)
             return 
 

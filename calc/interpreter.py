@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-#import pdb
+import pdb
 import logging
 import calc_lexeme as lxm 
 import calc_token as tkn 
@@ -61,8 +61,82 @@ class Interpreter(object):
     def program(self):
         logging.warning("IN:")
         """program : compound_statement DOT"""
-        node = self.compound_statement()
+
+        self.eat(tkn.Type.PROGRAM)
+        variable_node = self.variable()
+        program_name = variable_node.value
+
+        self.eat(tkn.Type.SEMI)
+
+        block_node = self.block()
+        program_node = ast.Program(program_name, block_node)
+
         self.eat(tkn.Type.DOT)
+
+        return program_node
+
+    #
+    # Block
+    #
+    def block(self):
+        logging.warning("IN:")
+        declaration_nodes = self.declarations()
+        compound_statement_nodes = self.compound_statement()
+        block_node = ast.Block(declaration_nodes, compound_statement_nodes)
+        return block_node 
+
+    #
+    # Declarations
+    #
+    def declarations(self):
+        """declarations : VAR (variable_declaration SEMI)+
+                        | empty
+        """
+        declarations = []
+        if self.__lexeme.token().type == tkn.Type.VAR:
+            self.eat(tkn.Type.VAR)
+            while self.__lexeme.token().type == tkn.Type.ID:
+                var_decl = self.variable_declaration()
+                declarations.extend(var_decl)
+                self.eat(tkn.Type.SEMI)
+
+        return declarations
+
+    #
+    # Variable declaration
+    #
+    def variable_declaration(self):
+        """variable_declaration : ID (COMMA ID)* COLON type_spec"""
+        var_nodes = [ast.Var(self.__lexeme.token())]  # first ID
+        self.eat(tkn.Type.ID)
+
+        while self.__lexeme.token().type == tkn.Type.COMMA:
+            self.eat(tkn.Type.COMMA)
+            var_nodes.append(ast.Var(self.__lexeme.token()))
+            self.eat(tkn.Type.ID)
+
+        self.eat(tkn.Type.COLON)
+
+        type_node = self.type_spec()
+        var_declarations = [
+            ast.VarDecl(var_node, type_node)
+            for var_node in var_nodes
+        ]
+        return var_declarations
+
+    ##
+    # Type spec
+    #
+    def type_spec(self):
+        """type_spec : INTEGER
+                     | REAL
+        """
+        token = self.__lexeme.token()
+        if self.__lexeme.token().type == tkn.Type.INTEGER:
+            self.eat(tkn.Type.INTEGER)
+        else:
+            self.eat(tkn.Type.REAL)
+        node = ast.Type(token)
         return node
 
     #
@@ -135,7 +209,7 @@ class Interpreter(object):
         token = self.__lexeme.token()
         self.eat(tkn.Type.ASSIGN)
         right = self.expr()
-        node = Assign(left, token, right)
+        node = ast.Assign(left, token, right)
         return node
 
     #
@@ -146,7 +220,7 @@ class Interpreter(object):
         """
         variable : ID
         """
-        node = Var(self.__lexeme.token())
+        node = ast.Var(self.__lexeme.token())
         self.eat(tkn.Type.ID)
         return node
 
@@ -164,7 +238,12 @@ class Interpreter(object):
     def factor(self):
         logging.warning("IN:")
         """
-        factor : (PLUS | MINUS) factor | INTEGER | LPAREN expr RPAREN
+        factor : PLUS factor
+              | MINUS factor
+              | INTEGER_CONST
+              | REAL_CONST
+              | LPAREN expr RPAREN
+              | variable
 
         The factor is the smallest posible production
         the parser expects a string of digits here,
@@ -182,9 +261,14 @@ class Interpreter(object):
         elif self.__lexeme.token().type == tkn.Type.MINUS:
             self.eat(tkn.Type.MINUS)
             node = ast.UnaryOp(token, self.factor()) 
+        elif self.__lexeme.token().type == tkn.Type.INTEGER_CONST:
+            self.eat(tkn.Type.INTEGER_CONST)
+            node = ast.Num(self.__lexeme.token())
+        elif self.__lexeme.token().type == tkn.Type.REAL_CONST:
+            self.eat(tkn.Type.REAL_CONST)
+            node = ast.Num(self.__lexeme.token())
         else :
-            node = self.__lexeme.token()
-            self.eat(tkn.Type.INTEGER)
+            node = self.variable()
 
         return node 
 
@@ -194,16 +278,18 @@ class Interpreter(object):
     def term(self):
         logging.warning("IN")
         """
-        term : factor ((MUL | DIV) factor)*
+        term : factor ((MUL | DIV | FLOAT_DIV) factor)*
         """
         node = self.factor()
 
-        while self.__lexeme.token().type in (tkn.Type.MUL, tkn.Type.DIV):
+        while self.__lexeme.token().type in (tkn.Type.MUL, tkn.Type.DIV, tkn.Type.FLOAT_DIV):
             token = self.__lexeme.token()
             if token.type == tkn.Type.MUL:
                 self.eat(tkn.Type.MUL)
             elif token.type == tkn.Type.DIV:
                 self.eat(tkn.Type.DIV)
+            elif token.type == tkn.Type.FLOAT_DIV:
+                self.eat(tkn.Type.FLOAT_DIV)
 
             node = ast.BinOp(left=node, op=token, right=self.factor())
 

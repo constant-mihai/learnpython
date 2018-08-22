@@ -19,6 +19,37 @@ class AST():
         self.__root = None
         self.GLOBAL_SCOPE = dict()
 
+#
+# Program
+#
+class Program(AST):
+    def __init__(self, name, block):
+        self.name = name
+        self.block = block
+
+#
+# Block
+#
+class Block(AST):
+    def __init__(self, declarations, compound_statement):
+        self.declarations = declarations
+        self.compound_statement = compound_statement
+
+#
+# Var decl
+#
+class VarDecl(AST):
+    def __init__(self, var_node, type_node):
+        self.var_node = var_node
+        self.type_node = type_node
+
+#
+# Type
+#
+class Type(AST):
+    def __init__(self, token):
+        self.token = token
+        self.value = token.value
 
 #
 # Node
@@ -57,6 +88,14 @@ class Assign(AST):
         # Why op? TODO
         self.token = self.op = op
         self.right = right
+
+#
+# Num
+#
+class Num(AST):
+    def __init__(self, token):
+        self.token = token
+        self.value = token.value
 
 #
 # Var
@@ -110,6 +149,34 @@ class CalcVisitor(NodeVisitor):
         pass 
 
     #
+    # Visit program
+    #
+    def visit_Program(self, node):
+        self.visit(node.block)
+
+    #
+    # Visit Block
+    # 
+    def visit_Block(self, node):
+        for declaration in node.declarations:
+            self.visit(declaration)
+        self.visit(node.compound_statement)
+
+    #
+    # Visit Var declaration
+    #
+    def visit_VarDecl(self, node):
+        # Do nothing
+        pass
+
+    #
+    # Visit Type
+    #
+    def visit_Type(self, node):
+        # Do nothing
+        pass
+
+    #
     # Visit unary
     #
     def visit_UnaryOp(self, node):
@@ -136,8 +203,11 @@ class CalcVisitor(NodeVisitor):
         elif node.op.type == tkn.Type.MUL:
             print("*")
             return (left * right)
-        elif node.op.type == tkn.Type.DIV:
+        elif node.op.type == tkn.Type.FLOAT_DIV:
             print("/")
+            return (left / right)
+        elif node.op.type == tkn.Type.DIV:
+            print("DIV")
             return (left / right)
 
     #

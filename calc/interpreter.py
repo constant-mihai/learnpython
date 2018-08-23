@@ -262,11 +262,11 @@ class Interpreter(object):
             self.eat(tkn.Type.MINUS)
             node = ast.UnaryOp(token, self.factor()) 
         elif self.__lexeme.token().type == tkn.Type.INTEGER_CONST:
+            node = ast.Num(self.__lexeme.token())
             self.eat(tkn.Type.INTEGER_CONST)
-            node = ast.Num(self.__lexeme.token())
         elif self.__lexeme.token().type == tkn.Type.REAL_CONST:
-            self.eat(tkn.Type.REAL_CONST)
             node = ast.Num(self.__lexeme.token())
+            self.eat(tkn.Type.REAL_CONST)
         else :
             node = self.variable()
 

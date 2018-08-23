@@ -17,7 +17,6 @@ class AST():
     #
     def __init__(self):
         self.__root = None
-        self.GLOBAL_SCOPE = dict()
 
 #
 # Program
@@ -117,18 +116,19 @@ class NoOp(AST):
 # https://ruslanspivak.com/lsbasi-part7/
 # https://docs.python.org/2.7/library/ast.html#module-ast
 #
-class NodeVisitor():
+class NodeVisitor(object):
     #
     # Ctor
     #
     def __init__(self):
-       pass 
+        self.GLOBAL_SCOPE = dict()
 
     #
     # Visit method
     #
     def visit(self, node):
         method_name = 'visit_' + type(node).__name__
+        logging.warning("IN, : {}".format(type(node)))
         visitor = getattr(self, method_name, self.generic_visit)
         return visitor(node)
 
@@ -146,7 +146,7 @@ class CalcVisitor(NodeVisitor):
     # Ctor
     #
     def __init__(self):
-        pass 
+        super().__init__()
 
     #
     # Visit program
@@ -231,11 +231,20 @@ class CalcVisitor(NodeVisitor):
         pass
 
     #
+    # Visit num 
+    #
+    def visit_Num(self, node):
+        print(node.value)
+        return node.value 
+
+    #
     # Assign
     #
     def visit_Assign(self, node):
         var_name = node.left.value
+        print(var_name)
         self.GLOBAL_SCOPE[var_name] = self.visit(node.right)
+        print(self.GLOBAL_SCOPE)
 
     #
     # Visit var
@@ -246,6 +255,7 @@ class CalcVisitor(NodeVisitor):
         if val is None:
             raise NameError(repr(var_name))
         else:
+            print(val)
             return val
 
 #

@@ -281,7 +281,8 @@ class Lexeme():
             return 
         
         # Reaching here means the char is not known
-        raise Parsing_error(self.__pos.char())
+        #raise Parsing_error(self.__pos.char())
+        return
 #
 # Main
 #

@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 import sys
+import symbol
 import interpreter as intrpr
 Interpreter = intrpr.Interpreter
 
@@ -36,8 +37,15 @@ def parse_file(name):
     f = open(name, "r")
     text = f.read()
     print(text)
+    # Parse file 
     interpreter = Interpreter(text)
     root = interpreter.program()
+
+    # Visit tree and Create symbol table
+    symbol_builder = symbol.SymbolTableBuilder()
+    symbol_builder.visit(root)
+
+    # Visit tree again and interpret 
     result = interpreter.parse_tree(root)
     print(result)
 

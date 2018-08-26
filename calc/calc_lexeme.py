@@ -1,12 +1,9 @@
 #!/usr/bin/python3
 import pdb
-import logging
+import logger 
 import calc_token as tkn 
 
-logging.basicConfig(level=logging.WARNING,
-        format='%(name)s:%(levelname)s\t'\
-                '%(funcName)s():%(lineno)s\t' \
-                '%(message)s')
+log = logger.create_logger("Lexer")
 
 #
 # Parser Exception
@@ -16,7 +13,7 @@ class Parsing_error(Exception):
     # Ctor
     #
     def __init__(self, text):
-        print("Unkown char: {}".format(text))
+        log.exception("Unkown char: {}".format(text))
 
 
 #
@@ -73,8 +70,9 @@ class Lexeme():
                 'VAR': tkn.Token(tkn.Type.VAR, 'VAR'),
                 'INTEGER': tkn.Token(tkn.Type.INTEGER, 'INTEGER'),
                 'REAL': tkn.Token(tkn.Type.REAL, 'REAL'),
+                'PROCEDURE': tkn.Token(tkn.Type.PROCEDURE, 'PROCEDURE'),
                 }
-        print(self.__words)
+        log.warning(self.__words)
         # Object keeping position and current char
         self.__pos = tkn.Position(text)
         # The current token
@@ -99,7 +97,7 @@ class Lexeme():
     # Build a word (identifier)
     #
     def word(self):
-        logging.warning("IN")
+        log.warning("IN")
         result = ""
         while self.__pos.the_end() != True and \
               ( self.__pos.char().isalpha() or \
@@ -108,7 +106,7 @@ class Lexeme():
             result += self.__pos.char()
             self.__pos.adv(1)
 
-        logging.warning("Word: {}".format(result))
+        log.warning("Word: {}".format(result))
         return result
 
     #
@@ -116,7 +114,7 @@ class Lexeme():
     # TODO -- float part not tested
     #
     def integer(self):
-        logging.warning("IN")
+        log.warning("IN")
         result = ""
         while self.__pos.the_end() != True and \
               self.__pos.char().isdigit():
@@ -132,10 +130,10 @@ class Lexeme():
                   self.__pos.char().isdigit():
                 result += self.__pos.char()
                 self.__pos.adv(1)
-            logging.warning("Float: {}".format(result))
+            log.warning("Float: {}".format(result))
             return False, float(result)
         else:
-            logging.warning("Integer: {}".format(result))
+            log.warning("Integer: {}".format(result))
             return True, int(result)
 
     #
@@ -185,23 +183,23 @@ class Lexeme():
     # Advances the token
     #
     def next_token(self):
-        logging.warning("IN")
+        log.warning("IN")
         """
         This method is responsible for breaking a sentence
         apart into tokens. One token at a time.
         """
         if self.__pos.the_end():
-            print("The End!")
+            log.warning("The End!")
             self.__token = tkn.Token(tkn.Type.EOF, None)
             return 
 
         while self.__pos.the_end() is not True:
             if self.__pos.char().isspace():
-                print("is space!")
+                log.warning("is space!")
                 self.__pos.adv(1)
 
             elif self.__pos.char()  == '{':
-                print("is comment!")
+                log.warning("is comment!")
                 self.__pos.adv(1)
                 self.skip_comment()
 

@@ -1,8 +1,10 @@
 #!/usr/bin/python3
+import logger 
 import sys
 import symbol
 import interpreter as intrpr
 Interpreter = intrpr.Interpreter
+
 
 #
 # Command line

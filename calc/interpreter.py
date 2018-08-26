@@ -1,15 +1,11 @@
 #!/usr/bin/python3
 import pdb
-import logging
+import logger 
 import calc_lexeme as lxm 
 import calc_token as tkn 
 import ast
 
-logging.basicConfig(level=logging.WARNING,
-        format='%(name)s:%(levelname)s\t'\
-                '%(funcName)s():%(lineno)s\t' \
-                '%(message)s')
-
+log = logger.create_logger("Interpreter")
 #
 # Main
 #
@@ -47,8 +43,8 @@ class Interpreter(object):
 
          @param[in] token_type
         """
-        logging.warning("Ordered {}".format(token_type))
-        logging.warning("Got {}:{}".format(self.__lexeme.token().type, \
+        log.warning("Ordered {}".format(token_type))
+        log.warning("Got {}:{}".format(self.__lexeme.token().type, \
                 self.__lexeme.token().value))
         if self.__lexeme.token().type == token_type:
             self.__lexeme.next_token()
@@ -59,7 +55,7 @@ class Interpreter(object):
     # Program
     #
     def program(self):
-        logging.warning("IN:")
+        log.warning("IN:")
         """program : compound_statement DOT"""
 
         self.eat(tkn.Type.PROGRAM)
@@ -79,7 +75,7 @@ class Interpreter(object):
     # Block
     #
     def block(self):
-        logging.warning("IN:")
+        log.warning("IN:")
         declaration_nodes = self.declarations()
         compound_statement_nodes = self.compound_statement()
         block_node = ast.Block(declaration_nodes, compound_statement_nodes)
@@ -89,8 +85,10 @@ class Interpreter(object):
     # Declarations
     #
     def declarations(self):
+        log.warning("IN:")
         """declarations : VAR (variable_declaration SEMI)+
-                        | empty
+                    | (PROCEDURE ID SEMI block SEMI)*
+                    | empty
         """
         declarations = []
         if self.__lexeme.token().type == tkn.Type.VAR:
@@ -100,12 +98,23 @@ class Interpreter(object):
                 declarations.extend(var_decl)
                 self.eat(tkn.Type.SEMI)
 
+        while self.__lexeme.token().type == tkn.Type.PROCEDURE:
+            self.eat(tkn.Type.PROCEDURE)
+            proc_name = self.__lexeme.token().value
+            self.eat(tkn.Type.ID)
+            self.eat(tkn.Type.SEMI)
+            block_node = self.block()
+            proc_decl = ast.ProcedureDecl(proc_name, block_node)
+            declarations.append(proc_decl)
+            self.eat(tkn.Type.SEMI)
+
         return declarations
 
     #
     # Variable declaration
     #
     def variable_declaration(self):
+        log.warning("IN:")
         """variable_declaration : ID (COMMA ID)* COLON type_spec"""
         var_nodes = [ast.Var(self.__lexeme.token())]  # first ID
         self.eat(tkn.Type.ID)
@@ -128,6 +137,7 @@ class Interpreter(object):
     # Type spec
     #
     def type_spec(self):
+        log.warning("IN:")
         """type_spec : INTEGER
                      | REAL
         """
@@ -143,7 +153,7 @@ class Interpreter(object):
     # Compound statement
     #
     def compound_statement(self):
-        logging.warning("IN:")
+        log.warning("IN:")
         """
         compound_statement: BEGIN statement_list END
         """
@@ -161,7 +171,7 @@ class Interpreter(object):
     # Statement list
     #
     def statement_list(self):
-        logging.warning("IN:")
+        log.warning("IN:")
         """
         statement_list : statement
                        | statement SEMI statement_list
@@ -183,7 +193,7 @@ class Interpreter(object):
     # Statement
     #
     def statement(self):
-        logging.warning("IN:")
+        log.warning("IN:")
         """
         statement : compound_statement
                   | assignment_statement
@@ -201,7 +211,7 @@ class Interpreter(object):
     # Assignment
     #
     def assignment_statement(self):
-        logging.warning("IN:")
+        log.warning("IN:")
         """
         assignment_statement : variable ASSIGN expr
         """
@@ -216,7 +226,7 @@ class Interpreter(object):
     # Variable
     #
     def variable(self):
-        logging.warning("IN:")
+        log.warning("IN:")
         """
         variable : ID
         """
@@ -228,7 +238,7 @@ class Interpreter(object):
     # Empty
     #
     def empty(self):
-        logging.warning("IN:")
+        log.warning("IN:")
         """An empty production"""
         return ast.NoOp()
 
@@ -236,7 +246,7 @@ class Interpreter(object):
     # Factor
     #
     def factor(self):
-        logging.warning("IN:")
+        log.warning("IN:")
         """
         factor : PLUS factor
               | MINUS factor
@@ -276,7 +286,7 @@ class Interpreter(object):
     # Term
     #
     def term(self):
-        logging.warning("IN")
+        log.warning("IN")
         """
         term : factor ((MUL | DIV | FLOAT_DIV) factor)*
         """
@@ -299,7 +309,7 @@ class Interpreter(object):
     # Expr
     #
     def expr(self):
-        logging.warning("IN")
+        log.warning("IN")
         """Arithmetic expression parser / interpreter.
 
         calc>  14 + 2 * 3 - 6 / 2

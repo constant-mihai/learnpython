@@ -1,12 +1,8 @@
 #!/usr/bin/python3
-import logging
+import logger 
 import calc_token as tkn 
 
-logging.basicConfig(level=logging.WARNING,
-        format='%(name)s:%(levelname)s\t'\
-                '%(funcName)s():%(lineno)s\t' \
-                '%(message)s')
-
+log = logger.create_logger("AST")
 
 #
 #  Abstract syntax tree
@@ -41,6 +37,14 @@ class VarDecl(AST):
     def __init__(self, var_node, type_node):
         self.var_node = var_node
         self.type_node = type_node
+
+#
+# Procedure
+#
+class ProcedureDecl(AST):
+    def __init__(self, proc_name, block_node):
+        self.proc_name = proc_name
+        self.block_node = block_node
 
 #
 # Type
@@ -128,7 +132,7 @@ class NodeVisitor(object):
     #
     def visit(self, node):
         method_name = 'visit_' + type(node).__name__
-        logging.warning("IN, : {}".format(type(node)))
+        log.warning("IN, : {}".format(type(node)))
         visitor = getattr(self, method_name, self.generic_visit)
         return visitor(node)
 
@@ -180,12 +184,12 @@ class CalcVisitor(NodeVisitor):
     # Visit unary
     #
     def visit_UnaryOp(self, node):
-        logging.warning("IN, op: {}".format(node.op.type))
+        log.warning("IN, op: {}".format(node.op.type))
         if node.op.type == tkn.Type.PLUS:
-            logging.warning("Plus")
+            log.warning("Plus")
             return +self.visit(node.expr)
         elif node.op.type == tkn.Type.MINUS:
-            logging.warning("Minus")
+            log.warning("Minus")
             return -self.visit(node.expr)
 
     #
@@ -257,6 +261,12 @@ class CalcVisitor(NodeVisitor):
         else:
             print(val)
             return val
+
+    #
+    # Visit procedure decl
+    #
+    def visit_ProcedureDecl(self, node):
+        pass
 
 #
 # Main

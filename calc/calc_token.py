@@ -1,4 +1,7 @@
 #!/usr/bin/python3
+import logger
+
+log = logger.create_logger("Token")
 
 from enum import Enum
 
@@ -27,6 +30,7 @@ class Type(Enum):
     COLON = 18,
     INTEGER_CONST = 19,
     REAL_CONST = 20,
+    PROCEDURE = 21,
     EOF = 100 
 
 
@@ -73,7 +77,7 @@ class Position():
         self.__pos = 0
         self.__text = text
         self.__char = self.__text[self.__pos]
-        print("Pos: {}, char: {}".format(self.__pos, self.__char))
+        log.warning("Pos: {}, char: {}".format(self.__pos, self.__char))
 
     #
     # Peek
@@ -91,11 +95,11 @@ class Position():
     def adv(self, leap):
         self.__pos += leap 
         if self.the_end():
-            print("Reachd end Pos: {}, last char: {}"\
+            log.warning("Reachd end Pos: {}, last char: {}"\
                     .format(self.__pos, self.__char))
         else:
             self.__char = self.__text[self.__pos]
-            print("Pos: {}, char: {}".format(self.__pos, self.__char))
+            log.warning("Pos: {}, char: {}".format(self.__pos, self.__char))
 
     #
     # Lesser than

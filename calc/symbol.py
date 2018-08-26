@@ -15,12 +15,21 @@ class SymbolTable(object):
         self.define(BuiltinTypeSymbol('REAL'))
 
     def __str__(self):
-        s = 'Symbols: {symbols}'.format(
-            symbols=[value for value in self._symbols.values()]
+        symtab_header = 'Symbol table contents'
+        lines = ['\n', symtab_header, '_' * len(symtab_header)]
+        lines.extend(
+            ('%7s: %r' % (key, value))
+            for key, value in self._symbols.items()
         )
+        lines.append('\n')
+        s = '\n'.join(lines)
         return s
 
     __repr__ = __str__
+
+    def insert(self, symbol):
+        print('Insert: %s' % symbol.name)
+        self._symbols[symbol.name] = symbol
 
     def define(self, symbol):
         print('Define: %s' % symbol)
@@ -39,6 +48,7 @@ class Symbol(object):
     def __init__(self, name, type=None):
         self.name = name
         self.type = type
+        self.category = category
 
 #
 # Builtin Type
@@ -50,7 +60,11 @@ class BuiltinTypeSymbol(Symbol):
     def __str__(self):
         return self.name
 
-    __repr__ = __str__
+    def __repr__(self):
+        return "<{class_name}(name='{name}')>".format(
+            class_name=self.__class__.__name__,
+            name=self.name,
+        )
 
 #
 # Var
@@ -60,7 +74,11 @@ class VarSymbol(Symbol):
         super(VarSymbol, self).__init__(name, type)
 
     def __str__(self):
-        return '<{name}:{type}>'.format(name=self.name, type=self.type)
+        return "<{class_name}(name='{name}', type='{type}')>".format(
+            class_name=self.__class__.__name__,
+            name=self.name,
+            type=self.type,
+        )
 
     __repr__ = __str__
 
@@ -94,6 +112,10 @@ class SymbolTableBuilder(ast.NodeVisitor):
             self.visit(child)
 
     def visit_NoOp(self, node):
+        pass
+
+    def visit_ProcedureDecl(self, node):
+        # TODO nested procedures
         pass
 
     def visit_VarDecl(self, node):

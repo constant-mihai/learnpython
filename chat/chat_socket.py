@@ -4,13 +4,32 @@
 import socket
 import sys
 import pdb
+import threading
+import prctl 
+import queue
 
 
-class Server:
-    def __init__(self, host, port):
+#
+# Server
+#
+class Server(threading.Thread):
+    #
+    # Ctor
+    #
+    def __init__(self, host, port, queue):
+        super(Server, self).__init__()
+        self.__host = host
+        self.__port = port 
+        self.__queue = queue 
+
+    #
+    # Overload run
+    #
+    def run(self):
         s = None
+        prctl.set_name("chat_server")
         #pdb.set_trace()
-        for res in socket.getaddrinfo(host, port, socket.AF_UNSPEC,
+        for res in socket.getaddrinfo(self.__host, self.__port, socket.AF_UNSPEC,
                                       socket.SOCK_STREAM, 0, socket.AI_PASSIVE):
             af, socktype, proto, canonname, sa = res
             try:
@@ -32,7 +51,7 @@ class Server:
             sys.exit(1)
 
         # Accept
-        pdb.set_trace()
+        #pdb.set_trace()
         conn, addr = s.accept()
         with conn:
             print('Connected by', addr)
@@ -42,44 +61,59 @@ class Server:
             # Check for connection and break when dead
             while True:
                 data = conn.recv(1024)
+                if data == b"EOT":
+                    print("Closing the Server.")
+                    s.shutdown(socket.SHUT_RDWR)
+                    s.close()
+                    break
                 if data: print(data)
                 conn.send(data)
 
 
-class Client:
-    def __init__(self, host, port):
+class Client(threading.Thread):
+    def __init__(self, host, port, queue):
+        super(Client, self).__init__()
+        self.__host = host
+        self.__port = port 
+        self.__queue = queue 
+
+
+    def run(self):
+        prctl.set_name("chat_client")
         s = None
-        for res in socket.getaddrinfo(host, port, socket.AF_UNSPEC, socket.SOCK_STREAM):
+        for res in socket.getaddrinfo(self.__host, self.__port, socket.AF_UNSPEC, socket.SOCK_STREAM):
             #pdb.set_trace()
             af, socktype, proto, canonname, sa = res
             try:
                 s = socket.socket(af, socktype, proto)
-            except OSError as msg:
+            except OSError as error_msg:
                 s = None
                 continue
             try:
                 print("Connect to {}.".format(sa))
                 s.connect(sa)
-            except OSError as msg:
+            except OSError as error_msg:
                 s.close()
                 s = None
-                print(msg)
+                print(error_msg)
                 continue
             break
         if s is None:
             print('could not open socket')
             sys.exit(1)
         with s:
+            msg = None
             while True:
-                try:
-                    text = input('calc> ')
-                    s.sendall(bytes(text, "ascii"))
-                    data = s.recv(1024)
-                    print('Received', repr(data))
-                except EOFError:
-                    break
-                if not text:
-                    continue
+                if self.__queue.empty() != False:
+                    msg = self.__queue.get()
+                    s.sendall(bytes(msg, "ascii"))
+                    if msg == "EOT":
+                        print("Closing the connection.")
+                        s.shutdown(socket.SHUT_RDWR)
+                        s.close()
+                        break
+                data = s.recv(1024)
+                print('Received', repr(data))
 
 #
 # Main

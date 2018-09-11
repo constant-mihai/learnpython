@@ -6,21 +6,26 @@ import sys
 import pdb
 import threading
 import prctl 
-import queue
-
+import time 
+import chat_messages as chame
+import pickle
+import logger
 
 #
 # Server
 #
 class Server(threading.Thread):
-    #
+    # #
     # Ctor
     #
-    def __init__(self, host, port, queue):
+    def __init__(self, host, port, cmd_q, mp):
         super(Server, self).__init__()
         self.__host = host
         self.__port = port 
-        self.__queue = queue 
+        self.__cmd_q = cmd_q 
+        self.__processor = mp 
+        self.__log = logger.create_logger("Server", "server.log")
+
 
     #
     # Overload run
@@ -54,30 +59,52 @@ class Server(threading.Thread):
         #pdb.set_trace()
         conn, addr = s.accept()
         with conn:
-            print('Connected by', addr)
+            self.__log.warning('Connected by {}'.
+                    format(addr))
             # TODO
             # If the connection is alive it will block on recv
             # Else it will put the cpu in 100% when the client dies
             # Check for connection and break when dead
             while True:
                 data = conn.recv(1024)
-                if data == b"EOT":
+                self.__processor.process(data)
+                if self.__processor.client_said_bye():
                     print("Closing the Server.")
                     s.shutdown(socket.SHUT_RDWR)
                     s.close()
                     break
-                if data: print(data)
-                conn.send(data)
+                #if data: print(data)
+                #conn.send(data)
 
 
+#
+# Client
+#
 class Client(threading.Thread):
-    def __init__(self, host, port, queue):
+    #
+    # Ctor
+    #
+    def __init__(self, host, port, input_q, cmd_q, mp):
         super(Client, self).__init__()
         self.__host = host
         self.__port = port 
-        self.__queue = queue 
+        self.__input_q = input_q
+        self.__cmd_q = cmd_q
+        self.__processor = mp
+
+    #
+    # Send bye
+    #
+    def send_bye(self, socket):
+        msg = chame.Message(0, 1,
+                  chame.Type.BYE, 0, 0) 
+        ser = pickle.dumps(msg)
+        socket.sendall(ser)
 
 
+    #
+    # Starts the thread
+    #
     def run(self):
         prctl.set_name("chat_client")
         s = None
@@ -104,16 +131,20 @@ class Client(threading.Thread):
         with s:
             msg = None
             while True:
-                if self.__queue.empty() != False:
-                    msg = self.__queue.get()
-                    s.sendall(bytes(msg, "ascii"))
-                    if msg == "EOT":
+                if self.__cmd_q.empty() == False:
+                    cmd = self.__cmd_q.get()
+                    if cmd == "exit":
                         print("Closing the connection.")
+                        self.send_bye(s)
                         s.shutdown(socket.SHUT_RDWR)
                         s.close()
                         break
-                data = s.recv(1024)
-                print('Received', repr(data))
+                if self.__input_q.empty() == False:
+                    msg = self.__input_q.get()
+                    s.sendall(msg)
+                #data = s.recv(1024)
+                #print('Received', repr(data))
+                time.sleep(1)
 
 #
 # Main

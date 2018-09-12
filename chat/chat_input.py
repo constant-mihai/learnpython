@@ -3,6 +3,7 @@
 import chat_commands as chaco
 import pickle
 import chat_messages as chame
+import logger
 
 #
 # Reads input
@@ -11,14 +12,18 @@ class Chat_input(object):
     #
     # Ctor
     #
-    def __init__(self, egress_queue, client_cmd_q, client_thread):
+    def __init__(self, egress_queue, client_cmd_q, 
+            server_cmd_q, client_thread):
         self.__egress_q = egress_queue
-        self.__client_cmd_q = client_cmd_q
+        #self.__client_cmd_q = client_cmd_q
+        #self.__server_cmd_q = server_cmd_q
         self.__in_chat = False
         self.__command = chaco.Command(self,
-                self.__client_cmd_q)
+                client_cmd_q,
+                server_cmd_q)
         self.__peer = "localhost, hardcoded"
         self.__client_thread = client_thread 
+        self.__log = logger.create_logger("Input", "main.log")
 
 
     #
@@ -31,13 +36,16 @@ class Chat_input(object):
     # Print the queue
     #
     def print_queue(self, raw):
+        self.__log.debug("This is the input queue")
+        qo = ""
         if raw:
             for el in list(self.__egress_q.queue):
-                print(el)
+                qo = qo + str(el)
         else:
             for el in list(self.__egress_q.queue):
                 deser = pickle.loads(el)
-                print(deser)
+                qo = qo + str(deser)
+        self.__log.debug(qo)
 
     #
     # Check if this is a command

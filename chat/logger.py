@@ -18,7 +18,7 @@ class Logger(object):
 def create_logger(file_name, log_file=None):
 
     logger = logging.getLogger(file_name)
-    logger.setLevel(logging.WARNING)
+    logger.setLevel(logging.DEBUG)
     formatter = logging.Formatter('[%(name)s: %(levelname)s]    '\
                     '%(funcName)s():%(lineno)s    ' \
                     '%(message)s')

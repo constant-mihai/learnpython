@@ -52,14 +52,14 @@ class Server(threading.Thread):
             break
 
         if s is None:
-            print('could not open socket')
+            self.__log.error('could not open socket')
             sys.exit(1)
 
         # Accept
         #pdb.set_trace()
         conn, addr = s.accept()
         with conn:
-            self.__log.warning('Connected by {}'.
+            self.__log.info('Connected by {}'.
                     format(addr))
             # TODO
             # If the connection is alive it will block on recv
@@ -68,11 +68,19 @@ class Server(threading.Thread):
             while True:
                 data = conn.recv(1024)
                 self.__processor.process(data)
-                if self.__processor.client_said_bye():
-                    print("Closing the Server.")
-                    s.shutdown(socket.SHUT_RDWR)
-                    s.close()
-                    break
+                # TODO this is wack,
+                # need separate cmd_q for server
+                # server doesn't shutdown on recv
+                # bye and should be able to
+                # receive connections from multiple
+                # clients
+                if self.__cmd_q.empty() == False:
+                    cmd = self.__cmd_q.get()
+                    if cmd == "stop server":
+                        self.__log.info("Closing the Server.")
+                        s.shutdown(socket.SHUT_RDWR)
+                        s.close()
+                        break
                 #if data: print(data)
                 #conn.send(data)
 
@@ -91,16 +99,7 @@ class Client(threading.Thread):
         self.__input_q = input_q
         self.__cmd_q = cmd_q
         self.__processor = mp
-
-    #
-    # Send bye
-    #
-    def send_bye(self, socket):
-        msg = chame.Message(0, 1,
-                  chame.Type.BYE, 0, 0) 
-        ser = pickle.dumps(msg)
-        socket.sendall(ser)
-
+        self.__log = logger.create_logger("Client", "client.log")
 
     #
     # Starts the thread
@@ -117,31 +116,30 @@ class Client(threading.Thread):
                 s = None
                 continue
             try:
-                print("Connect to {}.".format(sa))
+                self.__log.info("Connect to {}.".format(sa))
                 s.connect(sa)
             except OSError as error_msg:
                 s.close()
                 s = None
-                print(error_msg)
+                self.__log.error(error_msg)
                 continue
             break
         if s is None:
-            print('could not open socket')
+            self.__log.error('could not open socket')
             sys.exit(1)
         with s:
             msg = None
             while True:
+                while self.__input_q.empty() == False:
+                    msg = self.__input_q.get()
+                    s.sendall(msg)
                 if self.__cmd_q.empty() == False:
                     cmd = self.__cmd_q.get()
                     if cmd == "exit":
-                        print("Closing the connection.")
-                        self.send_bye(s)
+                        self.__log.info("Closing the connection.")
                         s.shutdown(socket.SHUT_RDWR)
                         s.close()
                         break
-                if self.__input_q.empty() == False:
-                    msg = self.__input_q.get()
-                    s.sendall(msg)
                 #data = s.recv(1024)
                 #print('Received', repr(data))
                 time.sleep(1)

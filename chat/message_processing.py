@@ -2,6 +2,7 @@
 
 import chat_messages as chame
 import pickle
+import logger 
 
 
 #
@@ -13,6 +14,7 @@ class Message_processing():
     #
     def __init__(self):
         self.__bye = False
+        self.__log = logger.create_logger("Message Processing", "main.log")
 
 
     #
@@ -25,10 +27,10 @@ class Message_processing():
             return
         msg = pickle.loads(data) 
         if msg.type == chame.Type.HELLO:
-            print("User {} says hello".format(msg.m_from))
+            self.__log.debug("User {} says hello".format(msg.m_from))
         elif msg.type == chame.Type.BYE:
-            print("User {} says bye".format(msg.m_from))
-            print("Closing the connection.")
+            self.__log.debug("User {} says bye".format(msg.m_from))
+            self.__log.debug("Closing the connection.")
             self.__bye = True
             #s.shutdown(socket.SHUT_RDWR)
             #s.close()

@@ -31,6 +31,7 @@ def main():
     # Start asking for input
     chat_input = chain.Chat_input(egress_queue, 
                                   client_cmd_q,
+                                  server_cmd_q,
                                   client_thread)
     chat_input.get_input()
 
